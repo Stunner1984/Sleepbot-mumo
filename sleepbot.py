@@ -49,92 +49,89 @@ class sleepbot(MumoModule):
                      }
     
     
-    # --------------- Module Initialization ---------------
+# --------------- Module Initialization ---------------
     
-    def __init__(self, name, manager, configuration=None):
-        MumoModule.__init__(self, name, manager, configuration)
-        self.murmur = manager.getMurmurModule()
+def __init__(self, name, manager, configuration=None):
+    MumoModule.__init__(self, name, manager, configuration)
+    self.murmur = manager.getMurmurModule()
     
-    def connected(self):
-        manager = self.manager()
-        log = self.log()
-        log.debug("Register for Server callbacks")
+def connected(self):
+    manager = self.manager()
+    log = self.log()
+    log.debug("Register for Server callbacks")
         
-        servers = self.cfg().sleepbot.servers
-        if not servers:
-            servers = manager.SERVERS_ALL
+    servers = self.cfg().sleepbot.servers
+    if not servers:
+        servers = manager.SERVERS_ALL
         
-        manager.subscribeServerCallbacks(self, servers)
-        
-        
-        # --------------- Get all users current position and store to memory ---------------
-        try:
-            userCount = 0
-            for serv in connServers:
-                userlist = serv.getUsers()
-                for user in userlist:
-                    entry = "%i-%s" % (serv.id(), userlist[user].name)
-                    setattr(sleepbot, entry, userlist[user].channel)
-                    userCount = userCount + 1
-            log.debug("Successfully took snap shot of user positions into memory for %i users" % userCount)
-                #except:
-#log.debug("Could not load user data into memory. Will track moving forward.")
-            
-    def disconnected(self): pass
+    manager.subscribeServerCallbacks(self, servers)
+
+    
+    # --------------- Get all users current position and store to memory ---------------
+    try:
+        userCount = 0
+        for serv in connServers:
+            userlist = serv.getUsers()
+            for user in userlist:
+                entry = "%i-%s" % (serv.id(), userlist[user].name)
+                setattr(sleepbot, entry, userlist[user].channel)
+                userCount = userCount + 1
+        log.debug("Successfully took snap shot of user positions into memory for %i users" % userCount)
+    except:
+        log.debug("Could not load user data into memory. Will track moving forward.")
+
+def isexception(self, userid, server):
+    userlist = serv.getUsers()
+    for user in userlist:
+        if (user == exceptions):
+            return True
+        else:
+            return False
+
+def disconnected(self): pass
 
 
 # --------------- Call back functions ---------------
 
 def userStateChanged(self, server, state, context=None):
     log = self.log()
-        sid = server.id()
-        
-        monitored = 0
-        
-        # --------------- Global config ---------------
-        try:
-            if self.cfg().sleepbot.limit > 0:
-                climit = self.cfg().sleepbot
-                curchan = state.channel
-                monitored = 1
-            if monitored == 1:
-                log.debug("User %s entered channel and is not empty", state.name, curchan, climit.limit)
-        except:
-                log.debug("Unable to determine config")
-            
-            # --------------- Get information on all connected users ---------------
-            userlist = server.getUsers()
-            exceptions = 0
-            chanCount = userlist + exceptions
-            for user in userlist:
-                if userlist[user].channel == curchan:
-                    chanCount = chanCount + 1
+    sid = server.id()
+    
+    
+    # --------------- Get information on all connected users ---------------
+    if (self.cfg().sleepbot.limit > 0):
+        userlist = server.getUsers()
+        exceptions = 0
+        chanCount = userlist + exceptions
+        for user in userlist:
+            if userlist[user].channel == curchan:
+                chanCount = chanCount + 1
             
             
-                # --------------- Check if occupied/unoccupied ---------------
-                if chanCount > climit.limit:
+        # --------------- Check if occupied/unoccupied ---------------
+        if (chanCount > climit.limit) and (isexception == True):
                     
-                    # Channel is now occupied
-                    try:
-                        server.sendMessage(state.channel, '.wakeup')
-                        server.sendMessage(state.channel, '-wakeup')
-                    except:
-                        log.debug("Unable to Wakeup bots")
+            # Channel is now occupied
+            try:
+                server.sendMessage(state.channel, '.wakeup')
+                server.sendMessage(state.channel, '-wakeup')
+            except:
+                log.debug("Unable to Wakeup bots")
 
-        if chanCount < climit.limit
-            
+        if (chanCount < climit.limit) and (isexception == True):
+    
             # Channel is unoccupied
             try:
                 server.sendMessage(state.channel, '.gotobed')
                 server.sendMessage(state.channel, '-gotobed')
-                    except:
-                        log.debug("Unable to Sleep bots")
+            except:
+                log.debug("Unable to Sleep bots")
 
 # Putting users new current channel into memory for later reference
 
 entry = "%i-%s" % (server.id(), state.name)
-    setattr(sleepbot, entry, state.channel)
-        testing = getattr(sleepbot, "%s" % entry)
+setattr(sleepbot, entry, state.channel)
+testing = getattr(sleepbot, "%s" % entry)
 
 def userConnected(self, server, state, context=None): pass
 
