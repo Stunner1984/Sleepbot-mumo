@@ -45,6 +45,8 @@ class sleepbot(MumoModule):
                                   ('servers', commaSeperatedIntegers, []),
                                   ('limit', int, 0),
                                   ('exceptions', commaSeperatedStrings, []),
+                                  ),
+                           lambda x: re.match('server_\d+', x):(
                                   )
                      }
     
@@ -80,10 +82,10 @@ def connected(self):
     except:
         log.debug("Could not load user data into memory. Will track moving forward.")
 
-def isexception(self, userid, server):
+def isexception(self, server, userid):
     userlist = serv.getUsers()
     for user in userlist:
-        if (user == exceptions):
+        if user == exceptions:
             return True
         else:
             return False
@@ -99,31 +101,40 @@ def userStateChanged(self, server, state, context=None):
     
     
     # --------------- Get information on all connected users ---------------
-    if (self.cfg().sleepbot.limit > 0):
+    exceptions = self.cfg().sleepbot.exceptions
+    try:
+        cexept = getattr(self.cfg(), 'channel_%id' % state.channel)
+        if cexept.exceptions:
+            exceptions = cexept.exceptions
+    except:
+        log.debug ("Exception failed")
+
+
+    if (self.cfg().sleepbot.limit >= 0):
         userlist = server.getUsers()
-        exceptions = 0
-        chanCount = userlist + exceptions
         for user in userlist:
+            if userlist[user].channel == curchan.exceptions:
+                chanCount = 0
             if userlist[user].channel == curchan:
                 chanCount = chanCount + 1
-            
+    
             
         # --------------- Check if occupied/unoccupied ---------------
-        if (chanCount > climit.limit) and (isexception == True):
+        if chanCount > climit.limit and isexception == True:
                     
             # Channel is now occupied
             try:
-                server.sendMessage(state.channel, '.wakeup')
-                server.sendMessage(state.channel, '-wakeup')
+                server.sendMessage(state.exceptions, '.wakeup')
+                server.sendMessage(state.exceptions, '-wakeup')
             except:
                 log.debug("Unable to Wakeup bots")
 
-        if (chanCount < climit.limit) and (isexception == True):
+        if chanCount < climit.limit and isexception == True:
     
             # Channel is unoccupied
             try:
-                server.sendMessage(state.channel, '.gotobed')
-                server.sendMessage(state.channel, '-gotobed')
+                server.sendMessage(state.exceptions, '.gotobed')
+                server.sendMessage(state.exceptions, '-gotobed')
             except:
                 log.debug("Unable to Sleep bots")
 
