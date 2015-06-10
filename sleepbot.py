@@ -68,7 +68,6 @@ def connected(self):
     servers = self.cfg().sleepbot.servers
     if not servers:
         servers = manager.SERVERS_ALL
-        
     manager.subscribeServerCallbacks(self, servers)
 
     try:
@@ -97,7 +96,6 @@ def userStateChanged(self, server, state, context=None):
     sid = server.id()
     active = 0
 
-
     if (self.cfg().sleepbot.limit >= 0):
         climit = self.cfg().sleepbot
         curchan = state.channel
@@ -108,46 +106,46 @@ def userStateChanged(self, server, state, context=None):
         for user in userlist:
             if(userlist[user].channel == curchan):
                 chanCount = chanCount + 1
-    # Check if channel over max & ACL present
-    if chanCount > climit.limit:
-        exceptions = self.cfg().sleepbot.exceptions
-        botfound = 0
-        if exceptions:
-            getID = [state.name]
-            userID = server.getUserIds(getID)
-            groupList = server.getACL(state.channel)
-            for group in groupList[1]:
-                for exception in exceptions:
-                    if (group.name == exception):
-                        for members in group.members:
-                            if (members == userID[state.name]):
-                                botfound = 1
-                                chanCount = 0
-                                return(1)
-                                        
-    if chanCount > climit.limit and botfound == 1:
-        # Channel is now occupied
-        try:
-            server.sendMessage(bot1.session, '.wakeup')
-            server.sendMessage(bot2.session, '-wakeup')
-        except:
-            log.debug("Unable to Wakeup bots")
+        # Check if channel over max & ACL present
+        if chanCount > climit.limit:
+            exceptions = self.cfg().sleepbot.exceptions
+            botfound = 0
+            if exceptions:
+                getID = [state.name]
+                userID = server.getUserIds(getID)
+                groupList = server.getACL(state.channel)
+                for group in groupList[1]:
+                    for exception in exceptions:
+                        if (group.name == exception):
+                            for members in group.members:
+                                if (members == userID[state.name]):
+                                    chanCount = chanCount - 1
+                                    botfound = 1
+                                    return(1)
 
-    if chanCount <= climit.limit and botfound == 1:
+        if chanCount > climit.limit and botfound == 1:
+            # Channel is now occupied
+            try:
+                server.sendMessage(bot1.session, '.wakeup')
+                server.sendMessage(bot2.session, '-wakeup')
+            except:
+                log.debug("Unable to Wakeup bots")
+
+        if chanCount <= climit.limit and botfound == 1:
     
-        # Channel is unoccupied
-        try:
-            server.sendMessage(bot1.session, '.gotobed')
-            server.sendMessage(bot2.session, '-gotobed')
-        except:
-            log.debug("Unable to Sleep bots")
+            # Channel is unoccupied
+            try:
+                server.sendMessage(bot1.session, '.gotobed')
+                server.sendMessage(bot2.session, '-gotobed')
+            except:
+                    log.debug("Unable to Sleep bots")
 
-# Putting users new current channel into memory for later reference
+    # Putting users new current channel into memory for later reference
 
-entry = "%i-%s" % (server.id(), state.name)
-setattr(sleepbot, entry, state.channel)
-testing = getattr(sleepbot, "%s" % entry)
-log.debug("Current channel stored as %s for %s as entry %s", testing, state.name, entry)
+    entry = "%i-%s" % (server.id(), state.name)
+    setattr(sleepbot, entry, state.channel)
+    testing = getattr(sleepbot, "%s" % entry)
+    log.debug("Current channel stored as %s for %s as entry %s", testing, state.name, entry)
 
 def userConnected(self, server, state, context=None): pass
 def userDisconnected(self, server, state, context=None): pass
