@@ -52,93 +52,103 @@ class sleepbot(MumoModule):
                      }
     
     
-# --------------- Module Initialization ---------------
+    # --------------- Module Initialization ---------------
     
-def __init__(self, name, manager, configuration=None):
-    MumoModule.__init__(self, name, manager, configuration)
-    self.murmur = manager.getMurmurModule()
+    def __init__(self, name, manager, configuration=None):
+        MumoModule.__init__(self, name, manager, configuration)
+        self.murmur = manager.getMurmurModule()
 
-def connected(self):
-    manager = self.manager()
-    log = self.log()
-    log.debug("Register for Server callbacks")
+    def connected(self):
+        manager = self.manager()
+        log = self.log()
+        log.debug("Register for Server callbacks")
         
-    servers = self.cfg().sleepbot.servers
-    if not servers:
-        servers = manager.SERVERS_ALL
-    manager.subscribeServerCallbacks(self, servers)
+        servers = self.cfg().sleepbot.servers
+        if not servers:
+            servers = manager.SERVERS_ALL
+        manager.subscribeServerCallbacks(self, servers)
 
-    userCount = 0
-    userlist = server.getUsers()
-    for user in userlist:
-        entry = "%i-%s" % (serv.id(), userlist[user].name)
-        setattr(sleepbot, entry, userlist[user].channel)
-        userCount = userCount + 1
-        log.debug("Successfully took snap shot of user positions into memory for %i users" % userCount)
+        try:
+            # Get server connections
+            meta = manager.getMeta();
+            connServers = meta.getBootedServers();
 
-def disconnected(self): pass
+            # Get all users and store in memory
+            userCount = 0
+            for serv in connServers:
+                userlist = serv.getUsers()
+                for user in userlist:
+                    entry = "%i-%s" % (serv.id(), userlist[user].name)
+                    log.debug("User chan: %s - Server: %i - %s", userlist[user].channel, serv.id(), entry)
+                    setattr(sleepbot, entry, userlist[user].channel)
+                    userCount = userCount + 1
+            log.debug("Successfully took snap shot of user positions into memory for %i users" % userCount)
+        except:
+            log.debug("Could not load user data into memory. Will track moving forward.")
 
-# --------------- Call back functions ---------------
+    def disconnected(self): pass
 
-def userStateChanged(self, server, state, context=None):
-    log = self.log()
-    sid = server.id()
-    active = 0
+    # --------------- Call back functions ---------------
 
-    if (self.cfg().sleepbot.limit >= 0):
-        climit = self.cfg().sleepbot
-        curchan = state.channel
-        active = 1
-    if active == 1:
-        userlist = server.getUsers()
-        chanCount = 0
-        for user in userlist:
-            if(userlist[user].channel == curchan):
-                chanCount = chanCount + 1
-        # Check if channel over max & ACL present
-        if chanCount > climit.limit:
-            exceptions = self.cfg().sleepbot.exceptions
-            botfound = 0
-            if exceptions:
-                getID = [state.name]
-                userID = server.getUserIds(getID)
-                groupList = server.getACL(state.channel)
-                for group in groupList[1]:
-                    for exception in exceptions:
-                        if (group.name == exception):
-                            for members in group.members:
-                                if (members == userID[state.name]):
-                                    chanCount = chanCount - 1
-                                    botfound = 1
-                                    return(1)
+    def userStateChanged(self, server, state, context=None):
+        log = self.log()
+        sid = server.id()
+        active = 0
 
-        if chanCount > climit.limit and botfound == 1:
-            # Channel is now occupied
-            try:
-                server.sendMessage(bot1.session, '.wakeup')
-                server.sendMessage(bot2.session, '-wakeup')
-            except:
-                log.debug("Unable to Wakeup bots")
+        if (self.cfg().sleepbot.limit >= 0):
+            climit = self.cfg().sleepbot
+            curchan = state.channel
+            active = 1
+        if active == 1:
+            userlist = server.getUsers()
+            chanCount = 0
+            for user in userlist:
+                if(userlist[user].channel == curchan):
+                    chanCount = chanCount + 1
+            # Check if channel over max & ACL present
+            if chanCount > climit.limit:
+                exceptions = self.cfg().sleepbot.exceptions
+                botfound = 0
+                if exceptions:
+                    getID = [state.name]
+                    userID = server.getUserIds(getID)
+                    groupList = server.getACL(state.channel)
+                    for group in groupList[1]:
+                        for exception in exceptions:
+                            if (group.name == exception):
+                                for members in group.members:
+                                    if (members == userID[state.name]):
+                                        chanCount = chanCount - 1
+                                        botfound = 1
+                                        return(1)
 
-        if chanCount <= climit.limit and botfound == 1:
+            if chanCount > climit.limit and botfound == 1:
+                # Channel is now occupied
+                try:
+                    server.sendMessage(bot1.session, '.wakeup')
+                    server.sendMessage(bot2.session, '-wakeup')
+                except:
+                    log.debug("Unable to Wakeup bots")
+
+            if chanCount <= climit.limit and botfound == 1:
     
-            # Channel is unoccupied
-            try:
-                server.sendMessage(bot1.session, '.gotobed')
-                server.sendMessage(bot2.session, '-gotobed')
-            except:
+                # Channel is unoccupied
+                try:
+                    server.sendMessage(bot1.session, '.gotobed')
+                    server.sendMessage(bot2.session, '-gotobed')
+                except:
                     log.debug("Unable to Sleep bots")
 
-    # Putting users new current channel into memory for later reference
+        # Putting users new current channel into memory for later reference
 
-    entry = "%i-%s" % (server.id(), state.name)
-    setattr(sleepbot, entry, state.channel)
-    testing = getattr(sleepbot, "%s" % entry)
-    log.debug("Current channel stored as %s for %s as entry %s", testing, state.name, entry)
+        entry = "%i-%s" % (server.id(), state.name)
+        setattr(sleepbot, entry, state.channel)
+        testing = getattr(sleepbot, "%s" % entry)
+        log.debug("Current channel stored as %s for %s as entry %s", testing, state.name, entry)
 
-def userConnected(self, server, state, context=None): pass
-def userDisconnected(self, server, state, context=None): pass
-def userTextMessage(self, server, user, message, current=None): pass
-def channelCreated(self, server, state, context=None): pass
-def channelRemoved(self, server, state, context=None): pass
-def channelStateChanged(self, server, state, context=None): pass
+    def userConnected(self, server, state, context=None): pass
+    def userDisconnected(self, server, state, context=None): pass
+    def userTextMessage(self, server, user, message, current=None): pass
+    def channelCreated(self, server, state, context=None): pass
+    def channelRemoved(self, server, state, context=None): pass
+    def channelStateChanged(self, server, state, context=None): pass
