@@ -48,8 +48,6 @@ class sleepbot(MumoModule):
                                   ('exceptions', commaSeperatedStrings, []),
                                   ('bot1', commaSeperatedStrings, []),
                                   ('bot2', commaSeperatedStrings, []),
-                                  ),
-                           lambda x: re.match('server_\d+', x):(
                                   )
                      }
     
@@ -70,24 +68,15 @@ def connected(self):
         servers = manager.SERVERS_ALL
     manager.subscribeServerCallbacks(self, servers)
 
-    try:
-        meta = manager.getMeta();
-        connServers = meta.getBootedServers();
-        
-        userCount = 0
-        for serv in connServers:
-            userlist = serv.getUsers()
-            for user in userlist:
-                entry = "%i-%s" % (serv.id(), userlist[user].name)
-                setattr(sleepbot, entry, userlist[user].channel)
-                userCount = userCount + 1
+    userCount = 0
+    userlist = server.getUsers()
+    for user in userlist:
+        entry = "%i-%s" % (serv.id(), userlist[user].name)
+        setattr(sleepbot, entry, userlist[user].channel)
+        userCount = userCount + 1
         log.debug("Successfully took snap shot of user positions into memory for %i users" % userCount)
-    except:
-        log.debug("Could not load user data into memory. Will track moving forward.")
-
 
 def disconnected(self): pass
-
 
 # --------------- Call back functions ---------------
 
