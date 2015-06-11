@@ -46,8 +46,7 @@ class sleepbot(MumoModule):
                                   ('servers', commaSeperatedIntegers, []),
                                   ('limit', int, 0),
                                   ('exceptions', commaSeperatedStrings, []),
-                                  ('bot1', commaSeperatedStrings, []),
-                                  ('bot2', commaSeperatedStrings, []),
+                                  ('botlist', commaSeperatedStrings, []),
                                   )
                      }
     
@@ -100,13 +99,21 @@ class sleepbot(MumoModule):
             curchan = state.channel
             active = 1
         if active == 1:
+            log.debug("User %s entered monitored channel %i which has a limit set to %i", state.name, curchan, climit.limit)
+
             userlist = server.getUsers()
+            botlist = self.cfg().sleepbot.musicbots
             chanCount = 0
             for user in userlist:
                 if(userlist[user].channel == curchan):
                     chanCount = chanCount + 1
-            # Check if channel over max & ACL present
-            if chanCount > climit.limit:
+                    log.debug("userlist %s and chanCount %i", userlist, chanCount)
+                    if(botlist[user].channel == curchan):
+                        chanCount = chanCount - 1
+                        log.debug("botlist %s and chanCount %i after musicbots", botlist, chanCount)
+            
+            if (chanCount > climit.limit):
+                # Check if channel has ACL present
                 exceptions = self.cfg().sleepbot.exceptions
                 botfound = 0
                 if exceptions:
@@ -118,26 +125,27 @@ class sleepbot(MumoModule):
                             if (group.name == exception):
                                 for members in group.members:
                                     if (members == userID[state.name]):
-                                        chanCount = chanCount - 1
                                         botfound = 1
+                                        log.debug("chanCount %i set after exceptions, botfound %i", chanCount, botfound)
                                         return(1)
+            
+                if botfound == 0:
+                    # Channel is now occupied
+                    try:
+                        server.sendMessage(self.session, '.gotobed')
+                        server.sendMessage(self.session, '-gotobed')
+                        log.debug("chanCount %i, climit %i, limit %i", chanCount, climit, limit)
+                    except:
+                        log.debug("Unable to put bots to sleep")
 
-            if chanCount > climit.limit and botfound == 1:
-                # Channel is now occupied
-                try:
-                    server.sendMessage(bot1.session, '.wakeup')
-                    server.sendMessage(bot2.session, '-wakeup')
-                except:
-                    log.debug("Unable to Wakeup bots")
-
-            if chanCount <= climit.limit and botfound == 1:
-    
-                # Channel is unoccupied
-                try:
-                    server.sendMessage(bot1.session, '.gotobed')
-                    server.sendMessage(bot2.session, '-gotobed')
-                except:
-                    log.debug("Unable to Sleep bots")
+                if botfound == 1:
+                    # Channel is unoccupied
+                    try:
+                        server.sendMessage(self.session, '.wakeup')
+                        server.sendMessage(self.session, '-wakeup')
+                        log.debug("chanCount %i, climit %i, limit %i", chanCount, climit, limit)
+                    except:
+                        log.debug("Unable to wakeup bots")
 
         # Putting users new current channel into memory for later reference
 
