@@ -102,15 +102,18 @@ class sleepbot(MumoModule):
             log.debug("User %s entered monitored channel %i which has a limit set to %i", state.name, curchan, climit.limit)
 
             userlist = server.getUsers()
-            botlist = self.cfg().sleepbot.musicbots
+            botlist = self.cfg().sleepbot.botlist
             chanCount = 0
             for user in userlist:
                 if(userlist[user].channel == curchan):
                     chanCount = chanCount + 1
-                    log.debug("userlist %s and chanCount %i", userlist, chanCount)
-                    if(botlist[user].channel == curchan):
-                        chanCount = chanCount - 1
-                        log.debug("botlist %s and chanCount %i after musicbots", botlist, chanCount)
+                    log.debug("user %s and chanCount %i", user, chanCount)
+                    for user in userlist:
+                        if(user.name == botlist):
+                            for botlist in user.name:
+                                if(user.channel == curchan):
+                                    chanCount = chanCount - 1
+                                    log.debug("botlist %s and chanCount %i after musicbots", user, chanCount)
             
             if (chanCount > climit.limit):
                 # Check if channel has ACL present
